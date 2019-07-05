@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+
 #define BUF_SIZE 256
 
 
@@ -18,23 +20,46 @@ void DieWithError(char *errorMessage){
 
 void commun(int sock){
 	char buf[BUF_SIZE];
+	char buf2[2*BUF_SIZE];
+	char buf_old[BUF_SIZE];
 	int len_r;
-	char * adr;
-	adr = strstr(buf,("\r\n\n\n");
+	char response[BUF_SIZE];
+	
 	while((len_r=recv(sock,buf,BUF_SIZE,0))>0){
 		buf[len_r]='\0';
+		sprintf(buf2,"%s%s",buf_old,buf);
 		printf("%s\n",buf);
-		if(strstr(buf,"\r\n\r\n")){
-			printf(#received HTTP request.");
+		if(strstr(buf2,"\r\n\r\n")){
 			break;
 		}
 	}
-		if(len_r <=0)DieWithError("recv()faile");
-		printf("received HTTP Request,\n");
-	}
-	printf("%s\n",buf);
-	if(send(sock,buf,strlen(buf),0)!=strlen(buf))DieWithError("tanaka()faile");
+	if(len_r <=0)
+		DieWithError("recv()faile");
+	printf("received HTTP Request,\n");
 	
+	sprintf(response, "HTTP/1.1 200 OK\r\n");
+    if(send(sock, response, strlen(response), 0) != strlen(response))
+        DieWithError("send() sent a message of unexpected bytes");
+    
+    sprintf(response, "Content-Type: text/html; charset=utf-8\r\n");
+    if(send(sock, response, strlen(response), 0) != strlen(response))
+        DieWithError("send() sent a message of unexpected bytes");
+        
+    sprintf(response, "\r\n");
+    if(send(sock, response, strlen(response), 0) != strlen(response))
+        DieWithError("send() sent a message of unexpected bytes");
+    
+    sprintf(response, "<!DOCTYPE html><html><head><title>");
+    if(send(sock, response, strlen(response), 0) != strlen(response))
+        DieWithError("send() sent a message of unexpected bytes");
+    
+    sprintf(response, "ネットワークプログラミングのwebサイト");
+    if(send(sock, response, strlen(response), 0) != strlen(response))
+        DieWithError("send() sent a message of unexpected bytes");
+    
+    sprintf(response, "</title></head><body>ネットワークダイスキ</body></html>");
+    if(send(sock, response, strlen(response), 0) != strlen(response))
+        DieWithError("send() sent a message of unexpected bytes");
 }
 
 
@@ -54,7 +79,7 @@ int main (int argc ,char **argv){
 	servAddess.sin_port=htons(80);
 	bind(servSock,(struct sockaddr *)&servAddess,sizeof(servAddess));
 	
-	listen(servSock,5); //���ԑ҂��}�e�����T//
+	listen(servSock,5); //順番待ちマテル数５//
 	while(1){
 		szClientaddr = sizeof(clientAddess);
 		cliSock=accept(servSock,(struct sockaddr *)&clientAddess,&szClientaddr);
