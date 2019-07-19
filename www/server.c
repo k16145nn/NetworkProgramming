@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <regex.h>
 
 #define BUF_SIZE 256
 
@@ -24,14 +24,40 @@ void commun(int sock){
 	char buf_old[BUF_SIZE];
 	int len_r;
 	char response[BUF_SIZE];
+	regex_t regBuf;
+	regmatch_t regMatch[1];
+	const char *pattern = "GET[^\n]+HTTP";
+	char result[100];
+	char *uri;
+	result[0]='\0';
+	regfree(&regBuf);
+	
+	
+	if(regcomp(&regBuf,pattern,REG_EXTENDED|REG_NEWLINE)!=0){
+		DieWithError("regcomp failed");
+	}
 	
 	while((len_r=recv(sock,buf,BUF_SIZE,0))>0){
+		
 		buf[len_r]='\0';
 		sprintf(buf2,"%s%s",buf_old,buf);
-		printf("%s\n",buf);
+		printf("%s",buf);
+		if(regexec(&regBuf,buf2,1,regMatch,0)!=0){
+			int startindex = regMatch[0].rm_so;
+			int endindex = regMatch[0].rm_eo;
+			strncpy(result,buf2+startindex,endindex-startindex);
+		}
+		if(result[0]!='\n'){
+			uri = strtok(result," ");
+			uri = strtok(NULL," ");
+			printf("%s\n",uri);
+	}else{
+		DieWithError("No URI");
+	}
 		if(strstr(buf2,"\r\n\r\n")){
 			break;
 		}
+		sprintf(buf_old,"%s",buf);
 	}
 	if(len_r <=0)
 		DieWithError("recv()faile");
