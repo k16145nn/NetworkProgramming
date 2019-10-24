@@ -17,7 +17,7 @@ void set_current_balance(int);
 
 int main(int argc, char *argv[])
 {
-    struct sockaddr_in clientAddess;
+    struct sockaddr_in clientAddress;
     unsigned int szClientAddr;
     int cliSock;
 
@@ -27,9 +27,8 @@ int main(int argc, char *argv[])
 
     while (1)
     {
-        szClientAddr = sizeof(clientAddess);
-        cliSock = accept(servSock, (struct sockaddr *)&clientAddess, &szClientAddr);
-
+        szClientAddr = sizeof(clientAddress);
+        cliSock = accept(servSock, (struct sockaddr *)&clientAddress, &szClientAddr);
         commun(cliSock);
 
         close(cliSock);

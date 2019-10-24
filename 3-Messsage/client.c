@@ -12,6 +12,7 @@ void DieWithError(char *);
 int prepare_client_socket(char *, int);
 void my_scanf(char *, int);
 void commun(int);
+void read_until_delim(int, char *, char, int);
 
 int main(int argc, char *argv[])
 {
@@ -91,4 +92,28 @@ void commun(int sock)
     }
     if (send(sock, msg, strlen(msg), 0) != strlen(msg))
         DieWithError("send()sent a message of unexpected dytes");
+
+    read_until_delim(sock, msg, '_', BUF_SIZE);
+    printf("残高は%d円になりました", atoi(msg));
+}
+
+void read_until_delim(int sock, char *buf, char delimiter, int max_length)
+{
+    int len_r = 0;
+    int index_letter = 0;
+
+    while (index_letter < max_length - 1)
+    {
+        if ((len_r = recv(sock, buf + index_letter, 1, 0)) <= 0)
+        {
+
+            printf("接続が切れました\n");
+            return;
+        }
+        if (buf[index_letter] == delimiter)
+            break;
+        else
+            index_letter++;
+    }
+    buf[index_letter] = '\0';
 }
