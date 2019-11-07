@@ -13,6 +13,13 @@ int prepare_client_socket(char *, int);
 void my_scanf(char *, int);
 void commun(int);
 void read_until_delim(int, char *, char, int);
+void read_certain_bytes(int, void *, int);
+
+struct money
+{
+    int deposit;
+    int withdraw;
+};
 
 int main(int argc, char *argv[])
 {
@@ -60,9 +67,9 @@ void my_scanf(char *buf, int num_letter)
 void commun(int sock)
 {
     char cmd[2] = "";
-    char withdraw[MONEY_DIGIT_SIZE + 1];
-    char deposit[MONEY_DIGIT_SIZE + 1];
-    char msg[BUF_SIZE];
+    struct money msgMoney;
+    char money[BUF_SIZE];
+    int result;
 
     printf("0:引き出し　1:預け入れ 2:残高参照 \n");
     printf("何をしますか? > ");
@@ -73,30 +80,31 @@ void commun(int sock)
     {
     case '0':
         printf("引き出す金額を入力してください > ");
-        my_scanf(withdraw, MONEY_DIGIT_SIZE);
-
-        sprintf(msg, "0_%s_", withdraw);
+        my_scanf(money, MONEY_DIGIT_SIZE);
+        msgMoney.deposit = 0;
+        msgMoney.withdraw = atoi(money);
         break;
     case '1':
         printf("預け入れる金額を選んでください > ");
-        my_scanf(deposit, MONEY_DIGIT_SIZE);
-
-        sprintf(msg, "%s_0_", deposit);
+        my_scanf(money, MONEY_DIGIT_SIZE);
+        msgMoney.deposit = atoi(money);
+        msgMoney.withdraw = 0;
         break;
     case '2':
-        strcpy(msg, "0_0_");
+        msgMoney.deposit = 0;
+        msgMoney.withdraw = 0;
         break;
     default:
         printf("番号が確認できませんでした.\n");
         return;
     }
 
-    printf("%lu バイトするならタウンワーク\n", sizeof(char) * strlen(msg));
-    if (send(sock, msg, strlen(msg), 0) != strlen(msg))
+    printf("%lu バイトするならタウンワーク\n", sizeof(msgMoney));
+    if (send(sock, &msgMoney, sizeof(msgMoney), 0) != sizeof(msgMoney))
         DieWithError("send()sent a message of unexpected dytes");
 
-    read_until_delim(sock, msg, '_', BUF_SIZE);
-    printf("残高は%d円になりました", atoi(msg));
+    read_certain_bytes(sock, &result, (int)sizeof(int));
+    printf("残高は%d円になりました", result);
 }
 
 void read_until_delim(int sock, char *buf, char delimiter, int max_length)
@@ -118,4 +126,17 @@ void read_until_delim(int sock, char *buf, char delimiter, int max_length)
             index_letter++;
     }
     buf[index_letter] = '\0';
+}
+
+void read_certain_bytes(int sock, void *buf, int length)
+{
+    int len_r = 0;
+    int len_sum = 0;
+
+    while (len_sum < length)
+    {
+        if ((len_r = recv(sock, buf + len_sum, length - len_sum, 0)) <= 0)
+            DieWithError("recv() failed");
+        len_sum += len_r;
+    }
 }

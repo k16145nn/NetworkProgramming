@@ -14,6 +14,13 @@ void commun(int);
 void read_until_delim(int, char *, char, int);
 int get_current_balance();
 void set_current_balance(int);
+void read_certain_bytes(int, void *, int);
+
+struct money
+{
+    int deposit;
+    int withdraw;
+};
 
 int main(int argc, char *argv[])
 {
@@ -92,17 +99,29 @@ void set_current_balance(int new_balance)
 
 void commun(int sock)
 {
-    char buf[BUF_SIZE];
     int balance = get_current_balance();
 
-    read_until_delim(sock, buf, '_', BUF_SIZE);
-    balance += atoi(buf);
-    read_until_delim(sock, buf, '_', BUF_SIZE);
-    balance -= atoi(buf);
+    struct money msgMoney;
+
+    read_certain_bytes(sock, &msgMoney, (int)sizeof(msgMoney));
+    balance += msgMoney.deposit;
+    balance -= msgMoney.withdraw;
 
     set_current_balance(balance);
 
-    sprintf(buf, "%d_", balance);
-    if (send(sock, buf, strlen(buf), 0) != strlen(buf))
+    if (send(sock, &balance, sizeof(balance), 0) != sizeof(balance))
         DieWithError("send() sent amessage of unexpected bytes");
+}
+
+void read_certain_bytes(int sock, void *buf, int length)
+{
+    int len_r = 0;
+    int len_sum = 0;
+
+    while (len_sum < length)
+    {
+        if ((len_r = recv(sock, buf + len_sum, length - len_sum, 0)) <= 0)
+            DieWithError("recv() failed");
+        len_sum += len_r;
+    }
 }
